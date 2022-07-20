@@ -3,7 +3,8 @@ import time
 
 import cv2
 import imageio
-from tensorboardX import SummaryWriter
+
+from torch.utils.tensorboard import SummaryWriter
 
 from core.NeRF import *
 from dataset.load_llff import load_llff_data
@@ -82,7 +83,7 @@ def train():
     os.makedirs(os.path.join(basedir, expname), exist_ok=True)
     os.makedirs(os.path.join(tensorboardbase, expname), exist_ok=True)
 
-    tensorboard = SummaryWriter(os.path.join(tensorboardbase, expname))
+    writer = SummaryWriter(os.path.join(tensorboardbase, expname))
 
     f = os.path.join(basedir, expname, 'args.txt')
     with open(f, 'w') as file:
@@ -422,10 +423,10 @@ def train():
                 if isinstance(test_lpips, torch.Tensor):
                     test_lpips = test_lpips.item()
 
-                tensorboard.add_scalar("Test MSE", test_mse, global_step)
-                tensorboard.add_scalar("Test PSNR", test_psnr, global_step)
-                tensorboard.add_scalar("Test SSIM", test_ssim, global_step)
-                tensorboard.add_scalar("Test LPIPS", test_lpips, global_step)
+                writer.add_scalar("Test MSE", test_mse, global_step)
+                writer.add_scalar("Test PSNR", test_psnr, global_step)
+                writer.add_scalar("Test SSIM", test_ssim, global_step)
+                writer.add_scalar("Test LPIPS", test_lpips, global_step)
 
             with open(test_metric_file, 'a') as outfile:
                 outfile.write(f"iter{i}/globalstep{global_step}: MSE:{test_mse:.8f} PSNR:{test_psnr:.8f}"
@@ -434,10 +435,10 @@ def train():
             print('Saved test set')
 
         if i % args.i_tensorboard == 0:
-            tensorboard.add_scalar("Loss", loss.item(), global_step)
-            tensorboard.add_scalar("PSNR", psnr.item(), global_step)
+            writer.add_scalar("Loss", loss.item(), global_step)
+            writer.add_scalar("PSNR", psnr.item(), global_step)
             for k, v in extra_loss.items():
-                tensorboard.add_scalar(k, v.item(), global_step)
+                writer.add_scalar(k, v.item(), global_step)
 
         if i % args.i_print == 0:
             print(f"[TRAIN] Iter: {i} Loss: {loss.item()}  PSNR: {psnr.item()}")
