@@ -444,8 +444,7 @@ def train():
             print(f"[TRAIN] Iter: {i} Loss: {loss.item()}  PSNR: {psnr.item()}")
 
         global_step += 1
-
-
+        
 if __name__ == '__main__':
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
     train()
