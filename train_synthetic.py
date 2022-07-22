@@ -11,7 +11,7 @@ from dataset.load_llff import load_llff_data
 from dataset.load_llff_syn import load_syn_llff_data
 from run_nerf_helpers import *
 from utils.metrics import compute_img_metric
-from utils.parser_syn import *
+from utils.parser_synthetic import *
 
 # np.random.seed(0)
 DEBUG = False
