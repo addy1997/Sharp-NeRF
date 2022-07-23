@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 
 def img2mse(x, y):
-    return torch.mean((x - y) ** 2)
+    return torch.mean((x - y)**2)
 
 
 def mse2psnr(x):
@@ -23,6 +23,7 @@ HALF_PIX = 0.5
 
 
 class ToneMapping(nn.Module):
+
     def __init__(self, map_type: str):
         super(ToneMapping, self).__init__()
         assert map_type in ["none", "gamma", "learn", "ycbcr"]
@@ -48,14 +49,18 @@ class ToneMapping(nn.Module):
             x_out = torch.sigmoid(res_x + x_in)
             return x_out.reshape(ori_shape)
         elif self.map_type == "gamma":
-            return x ** (1.0 / 2.2)
+            return x**(1.0 / 2.2)
         else:
             assert RuntimeError("map_type not recognized")
 
 
-def visualize_crf2d(
-    crf: nn.Module, min_=0, max_=1, mine=-3, maxe=3, islog=False, reverse=False
-):
+def visualize_crf2d(crf: nn.Module,
+                    min_=0,
+                    max_=1,
+                    mine=-3,
+                    maxe=3,
+                    islog=False,
+                    reverse=False):
     i = torch.linspace(min_, max_, 256)
     e = torch.linspace(mine, maxe, 256)
     x, y = torch.meshgrid(i, e)
@@ -77,7 +82,12 @@ def visualize_crf2d(
     plt.show()
 
 
-def visualize_crf(crf: nn.Module, min_=0, max_=1, e=0, islog=False, reverse=False):
+def visualize_crf(crf: nn.Module,
+                  min_=0,
+                  max_=1,
+                  e=0,
+                  islog=False,
+                  reverse=False):
     i = torch.linspace(min_, max_, 256)
     with torch.no_grad():
         out = crf(-i if reverse else i, torch.ones_like(i) * e)
@@ -88,17 +98,23 @@ def visualize_crf(crf: nn.Module, min_=0, max_=1, e=0, islog=False, reverse=Fals
 
 
 @torch.no_grad()
-def visualize_kernel(
-    H, W, K, nerf: nn.Module, img_idx=1, x=1, y=1, depth=0.5, color=False, weight=False
-):
+def visualize_kernel(H,
+                     W,
+                     K,
+                     nerf: nn.Module,
+                     img_idx=1,
+                     x=1,
+                     y=1,
+                     depth=0.5,
+                     color=False,
+                     weight=False):
     if isinstance(nerf, nn.DataParallel):
         nerf = nerf.module
 
     nerf.cuda()
     ray_info = {}
-    ray_info["images_idx"] = (
-        torch.tensor(img_idx).type(torch.int64).cuda().reshape(-1, 1).expand(100, 1)
-    )
+    ray_info["images_idx"] = (torch.tensor(img_idx).type(
+        torch.int64).cuda().reshape(-1, 1).expand(100, 1))
     ray_info["rays_x"] = torch.ones_like(ray_info["images_idx"]) * x
     ray_info["rays_y"] = torch.ones_like(ray_info["images_idx"]) * y
     ray_info["ray_depth"] = torch.ones_like(ray_info["rays_x"]) * depth
@@ -106,7 +122,7 @@ def visualize_kernel(
     rays, weights, _ = nerf.kernelsnet(H, W, K, None, ray_info)
     rays_d = rays[..., 1]
     poses = nerf.kernelsnet.poses
-    r_inv = poses[img_idx : img_idx + 1, :3, :3].inverse()
+    r_inv = poses[img_idx:img_idx + 1, :3, :3].inverse()
     rays_d = (r_inv[:, None] @ rays_d[..., None]).squeeze(-1)
     rays_d = rays_d / -rays_d[..., -1:]
     rays_x = rays_d[..., 0] * K[0, 0] + K[0, 2]
@@ -116,16 +132,11 @@ def visualize_kernel(
 
     import matplotlib.pyplot as plt
 
-    colors = (
-        np.linspace(0, 255, rays_x.permute(1, 0).reshape(-1).shape[0]).astype(np.uint8)
-        if color
-        else None
-    )
-    scale = (
-        (weights.permute(1, 0).reshape(-1).cpu().numpy() * 200).astype(np.uint8)
-        if weight
-        else None
-    )
+    colors = (np.linspace(0, 255,
+                          rays_x.permute(1, 0).reshape(-1).shape[0]).astype(
+                              np.uint8) if color else None)
+    scale = ((weights.permute(1, 0).reshape(-1).cpu().numpy() *
+              200).astype(np.uint8) if weight else None)
     plt.scatter(
         rays_x.permute(1, 0).reshape(-1).cpu().numpy(),
         rays_y.permute(1, 0).reshape(-1).cpu().numpy(),
@@ -136,17 +147,22 @@ def visualize_kernel(
 
 
 @torch.no_grad()
-def visualize_itsample(
-    H, W, K, nerf: nn.Module, x=1, y=1, img_idx=1, ptnum=1000, color=False
-):
+def visualize_itsample(H,
+                       W,
+                       K,
+                       nerf: nn.Module,
+                       x=1,
+                       y=1,
+                       img_idx=1,
+                       ptnum=1000,
+                       color=False):
     if isinstance(nerf, nn.DataParallel):
         nerf = nerf.module
 
     nerf.cuda()
     ray_info = {}
-    ray_info["images_idx"] = (
-        torch.tensor(img_idx).type(torch.int64).cuda().reshape(-1, 1)
-    )
+    ray_info["images_idx"] = (torch.tensor(img_idx).type(
+        torch.int64).cuda().reshape(-1, 1))
     nerf.kernelsnet.num_pt = ptnum
     ray_info["rays_x"] = torch.ones_like(ray_info["images_idx"]) * x
     ray_info["rays_y"] = torch.ones_like(ray_info["images_idx"]) * y
@@ -154,7 +170,7 @@ def visualize_itsample(
     rays, weights, loss = nerf.kernelsnet(H, W, K, None, ray_info)
     rays_d = rays[..., 1]
     poses = nerf.kernelsnet.poses
-    r_inv = poses[img_idx : img_idx + 1, :3, :3].inverse()
+    r_inv = poses[img_idx:img_idx + 1, :3, :3].inverse()
     rays_d = (r_inv[:, None] @ rays_d[..., None]).squeeze(-1)
     rays_d = rays_d / -rays_d[..., -1:]
     rays_x = rays_d[..., 0] * K[0, 0] + K[0, 2]
@@ -164,13 +180,21 @@ def visualize_itsample(
 
     import matplotlib.pyplot as plt
 
-    colors = np.linspace(0, 255, rays_x.shape[1]).astype(np.uint8) if color else None
+    colors = np.linspace(0, 255, rays_x.shape[1]).astype(
+        np.uint8) if color else None
     plt.scatter(rays_x[0].cpu().numpy(), rays_y[0].cpu().numpy(), None, colors)
     plt.show()
 
 
 @torch.no_grad()
-def visualize_kmap(H, W, K, nerf: nn.Module, x=1, y=1, img_idx=1, softmax=False):
+def visualize_kmap(H,
+                   W,
+                   K,
+                   nerf: nn.Module,
+                   x=1,
+                   y=1,
+                   img_idx=1,
+                   softmax=False):
     if isinstance(nerf, nn.DataParallel):
         nerf = nerf.module
 
@@ -203,11 +227,9 @@ def visualize_motionposes(H, W, K, nerf: nn.Module, img_idx=1):
 
     self = nerf.kernelsnet
     r_x = self.rotations[..., 0, :] / torch.norm(
-        self.rotations[..., 0, :], dim=2, keepdim=True
-    )
+        self.rotations[..., 0, :], dim=2, keepdim=True)
     r_y = self.rotations[..., 1, :] / torch.norm(
-        self.rotations[..., 1, :], dim=2, keepdim=True
-    )
+        self.rotations[..., 1, :], dim=2, keepdim=True)
     r_z = torch.cross(r_x, r_y, dim=2)
     rotations = torch.stack([r_x, r_y, r_z], dim=-1)
     delta_poses = torch.cat([rotations, self.trans[..., None]], dim=-1)
@@ -218,6 +240,7 @@ def visualize_motionposes(H, W, K, nerf: nn.Module, img_idx=1):
 
 
 class Embedder(nn.Module):
+
     def __init__(self, **kwargs):
         super().__init__()
         self.kwargs = kwargs
@@ -230,9 +253,11 @@ class Embedder(nn.Module):
         N_freqs = self.kwargs["num_freqs"]
 
         if self.kwargs["log_sampling"]:
-            self.freq_bands = 2.0 ** torch.linspace(0.0, max_freq, steps=N_freqs)
+            self.freq_bands = 2.0**torch.linspace(0.0, max_freq, steps=N_freqs)
         else:
-            self.freq_bands = torch.linspace(2.0**0.0, 2.0**max_freq, steps=N_freqs)
+            self.freq_bands = torch.linspace(2.0**0.0,
+                                             2.0**max_freq,
+                                             steps=N_freqs)
 
         for freq in self.freq_bands:
             for p_fn in self.kwargs["periodic_fns"]:
@@ -254,6 +279,7 @@ class Embedder(nn.Module):
 
 
 class NoEncoding(Embedder):
+
     def __init__(self, **kwargs):
         super().__init__()
 
@@ -285,6 +311,7 @@ def get_embedder(multires, i=0, input_dim=3):
 
 # Model
 class NeRF(nn.Module):
+
     def __init__(
         self,
         D=8,
@@ -304,16 +331,14 @@ class NeRF(nn.Module):
         self.skips = skips
         self.use_viewdirs = use_viewdirs
 
-        self.pts_linears = nn.ModuleList(
-            [nn.Linear(input_ch, W)]
-            + [
-                nn.Linear(W, W) if i not in self.skips else nn.Linear(W + input_ch, W)
-                for i in range(D - 1)
-            ]
-        )
+        self.pts_linears = nn.ModuleList([nn.Linear(input_ch, W)] + [
+            nn.Linear(W, W) if i not in
+            self.skips else nn.Linear(W + input_ch, W) for i in range(D - 1)
+        ])
 
         # Implementation according to the official code release (https://github.com/bmild/nerf/blob/master/run_nerf_helpers.py#L104-L105)
-        self.views_linears = nn.ModuleList([nn.Linear(input_ch_views + W, W // 2)])
+        self.views_linears = nn.ModuleList(
+            [nn.Linear(input_ch_views + W, W // 2)])
 
         # Implementation according to the paper
         # self.views_linears = nn.ModuleList(
@@ -328,8 +353,7 @@ class NeRF(nn.Module):
 
     def forward(self, x):
         input_pts, input_views = torch.split(
-            x, [self.input_ch, self.input_ch_views], dim=-1
-        )
+            x, [self.input_ch, self.input_ch_views], dim=-1)
         h = input_pts
         for i, l in enumerate(self.pts_linears):
             h = self.pts_linears[i](h)
@@ -360,54 +384,45 @@ class NeRF(nn.Module):
         for i in range(self.D):
             idx_pts_linears = 2 * i
             self.pts_linears[i].weight.data = torch.from_numpy(
-                np.transpose(weights[idx_pts_linears])
-            )
+                np.transpose(weights[idx_pts_linears]))
             self.pts_linears[i].bias.data = torch.from_numpy(
-                np.transpose(weights[idx_pts_linears + 1])
-            )
+                np.transpose(weights[idx_pts_linears + 1]))
 
         # Load feature_linear
         idx_feature_linear = 2 * self.D
         self.feature_linear.weight.data = torch.from_numpy(
-            np.transpose(weights[idx_feature_linear])
-        )
+            np.transpose(weights[idx_feature_linear]))
         self.feature_linear.bias.data = torch.from_numpy(
-            np.transpose(weights[idx_feature_linear + 1])
-        )
+            np.transpose(weights[idx_feature_linear + 1]))
 
         # Load views_linears
         idx_views_linears = 2 * self.D + 2
         self.views_linears[0].weight.data = torch.from_numpy(
-            np.transpose(weights[idx_views_linears])
-        )
+            np.transpose(weights[idx_views_linears]))
         self.views_linears[0].bias.data = torch.from_numpy(
-            np.transpose(weights[idx_views_linears + 1])
-        )
+            np.transpose(weights[idx_views_linears + 1]))
 
         # Load rgb_linear
         idx_rbg_linear = 2 * self.D + 4
         self.rgb_linear.weight.data = torch.from_numpy(
-            np.transpose(weights[idx_rbg_linear])
-        )
+            np.transpose(weights[idx_rbg_linear]))
         self.rgb_linear.bias.data = torch.from_numpy(
-            np.transpose(weights[idx_rbg_linear + 1])
-        )
+            np.transpose(weights[idx_rbg_linear + 1]))
 
         # Load alpha_linear
         idx_alpha_linear = 2 * self.D + 6
         self.alpha_linear.weight.data = torch.from_numpy(
-            np.transpose(weights[idx_alpha_linear])
-        )
+            np.transpose(weights[idx_alpha_linear]))
         self.alpha_linear.bias.data = torch.from_numpy(
-            np.transpose(weights[idx_alpha_linear + 1])
-        )
+            np.transpose(weights[idx_alpha_linear + 1]))
 
 
 # Ray helpers
 def get_rays(H, W, K, c2w):
-    i, j = torch.meshgrid(
-        torch.linspace(0, W - 1, W), torch.linspace(0, H - 1, H)
-    )  # pytorch's meshgrid has indexing='ij'
+    i, j = torch.meshgrid(torch.linspace(0, W - 1, W),
+                          torch.linspace(
+                              0, H - 1,
+                              H))  # pytorch's meshgrid has indexing='ij'
     i = i.t()
     j = j.t()
     dirs = torch.stack(
@@ -420,17 +435,17 @@ def get_rays(H, W, K, c2w):
     )
     # Rotate ray directions from camera frame to the world frame
     rays_d = torch.sum(
-        dirs[..., np.newaxis, :] * c2w[:3, :3], -1
-    )  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
+        dirs[..., np.newaxis, :] * c2w[:3, :3],
+        -1)  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
     # Translate camera frame's origin to the world frame. It is the origin of all rays.
     rays_o = c2w[:3, -1].expand(rays_d.shape)
     return rays_o, rays_d
 
 
 def get_rays_np(H, W, K, c2w):
-    i, j = np.meshgrid(
-        np.arange(W, dtype=np.float32), np.arange(H, dtype=np.float32), indexing="xy"
-    )
+    i, j = np.meshgrid(np.arange(W, dtype=np.float32),
+                       np.arange(H, dtype=np.float32),
+                       indexing="xy")
     dirs = np.stack(
         [
             (i + (HALF_PIX - K[0][2])) / K[0][0],
@@ -441,8 +456,8 @@ def get_rays_np(H, W, K, c2w):
     )
     # Rotate ray directions from camera frame to the world frame
     rays_d = np.sum(
-        dirs[..., np.newaxis, :] * c2w[:3, :3], -1
-    )  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
+        dirs[..., np.newaxis, :] * c2w[:3, :3],
+        -1)  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
     # Translate camera frame's origin to the world frame. It is the origin of all rays.
     rays_o = np.broadcast_to(c2w[:3, -1], np.shape(rays_d))
     return rays_o, rays_d
@@ -461,16 +476,10 @@ def ndc_rays(H, W, focal, near, rays_o, rays_d):
     o1 = -1.0 / (H / (2.0 * focal)) * rays_o[..., 1] / rays_o[..., 2]
     o2 = 1.0 + 2.0 * near / rays_o[..., 2]
 
-    d0 = (
-        -1.0
-        / (W / (2.0 * focal))
-        * (rays_d[..., 0] / rays_d[..., 2] - rays_o[..., 0] / rays_o[..., 2])
-    )
-    d1 = (
-        -1.0
-        / (H / (2.0 * focal))
-        * (rays_d[..., 1] / rays_d[..., 2] - rays_o[..., 1] / rays_o[..., 2])
-    )
+    d0 = (-1.0 / (W / (2.0 * focal)) *
+          (rays_d[..., 0] / rays_d[..., 2] - rays_o[..., 0] / rays_o[..., 2]))
+    d1 = (-1.0 / (H / (2.0 * focal)) *
+          (rays_d[..., 1] / rays_d[..., 2] - rays_o[..., 1] / rays_o[..., 2]))
     d2 = -2.0 * near / rays_o[..., 2]
 
     rays_o = torch.stack([o0, o1, o2], -1)
@@ -533,17 +542,26 @@ def smart_load_state_dict(model: nn.Module, state_dict: dict):
             k.lstrip("module."): v
             for k, v in state_dict["network_fn_state_dict"].items()
         }
-        state_dict_fn = {"mlp_coarse." + k: v for k, v in state_dict_fn.items()}
+        state_dict_fn = {
+            "mlp_coarse." + k: v
+            for k, v in state_dict_fn.items()
+        }
 
         state_dict_fine = {
             k.lstrip("module."): v
             for k, v in state_dict["network_fine_state_dict"].items()
         }
-        state_dict_fine = {"mlp_fine." + k: v for k, v in state_dict_fine.items()}
+        state_dict_fine = {
+            "mlp_fine." + k: v
+            for k, v in state_dict_fine.items()
+        }
         state_dict_fn.update(state_dict_fine)
         state_dict = state_dict_fn
     elif "network_state_dict" in state_dict.keys():
-        state_dict = {k[7:]: v for k, v in state_dict["network_state_dict"].items()}
+        state_dict = {
+            k[7:]: v
+            for k, v in state_dict["network_state_dict"].items()
+        }
     else:
         state_dict = state_dict
 
