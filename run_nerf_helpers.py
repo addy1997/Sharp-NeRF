@@ -1,8 +1,8 @@
 import numpy as np
 import torch
-# torch.autograd.set_detect_anomaly(True)
 import torch.nn as nn
 import torch.nn.functional as F
+# torch.autograd.set_detect_anomaly(True)
 
 # Misc
 
