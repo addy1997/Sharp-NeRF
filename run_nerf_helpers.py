@@ -163,7 +163,6 @@ def visualize_motionposes(H, W, K, nerf: nn.Module, img_idx=1):
     delta_poses = torch.cat([rotations, self.trans[..., None]], dim=-1)
     visualize_pose(delta_poses[img_idx].cpu().numpy(), W / H, K[0, 0])
 
-
 # Positional encoding (section 5.1)
 class Embedder(nn.Module):
     def __init__(self, **kwargs):
@@ -200,6 +199,17 @@ class Embedder(nn.Module):
                 outputs.append(p_fn(inputs * freq))
         return torch.cat(outputs, -1)
 
+class NoEncoding(Embedder):
+    
+    def __init__(self, **kwargs):
+        super().__init__()
+        
+    def forward(self, inputs):
+        pass
+          
+def no_encoding(self, inputs):
+    no_enc_obj = NoEncoding()
+    return no_enc_obj
 
 def get_embedder(multires, i=0, input_dim=3):
     if i == -1:
@@ -216,7 +226,7 @@ def get_embedder(multires, i=0, input_dim=3):
 
     embedder_obj = Embedder(**embed_kwargs)
     return embedder_obj, embedder_obj.out_dim
-
+    
 
 # Model
 class NeRF(nn.Module):
