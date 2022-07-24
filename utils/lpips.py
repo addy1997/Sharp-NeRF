@@ -11,7 +11,8 @@ import torch.nn as nn
 from torch.nn.functional import normalize
 import torch.nn.init as init
 from torch.autograd import Variable
-import numpy as np
+import jax
+import jax.numpy as jnp
 from . import pretrained_networks as pn
 
 from skimage.metrics import structural_similarity as ssim
@@ -30,13 +31,13 @@ def normalize_tensor(input_feature, eps=1e-10):
 def calculate_l2(p0, p1, range=255.0):
     """ A function to calculate l2 loss. """
 
-    return 0.5 * np.mean((p0 / range - p1 / range) ** 2)
+    return 0.5 * jnp.mean((p0 / range - p1 / range) ** 2)
  
 
 def calculate_psnr(p0, p1, peak_val=255.0):
     """ A function to calculate Peak signal-to-noise ratio. """
 
-    return 10 * np.log10(peak_val ** 2 / np.mean((1. * p0 - 1. * p1) ** 2))
+    return 10 * jnp.log10(peak_val ** 2 / jnp.mean((1. * p0 - 1. * p1) ** 2))
   
 
 def calculate_dssim(p0, p1, range=255.0):
@@ -89,30 +90,30 @@ def tensorlab2tensor(lab_tensor, return_inbnd=False):
     lab = tensor2numpy(lab_tensor) * 100.
     lab[:, :, 0] = lab[:, :, 0] + 50
 
-    rgb_back = 255. * np.clip(color.lab2rgb(lab.astype('float')), 0, 1)
+    rgb_back = 255. * jnp.clip(color.lab2rgb(lab.astype('float')), 0, 1)
     if return_inbnd:
         # convert back to lab, see if we match
         lab_back = color.rgb2lab(rgb_back.astype('uint8'))
-        mask = 1. * np.isclose(lab_back, lab, atol=2.)
-        mask = numpy2tensor(np.prod(mask, axis=2)[:, :, np.newaxis])
+        mask = 1. * jnp.isclose(lab_back, lab, atol=2.)
+        mask = numpy2tensor(jnp.dot(mask, axis=2)[:, :, jnp.newaxis])
         return im2tensor(rgb_back), mask
     else:
         return im2tensor(rgb_back)
 
 
-def tensor2im(image_tensor, imtype=np.uint8, cent=1., factor=255. / 2.):
+def tensor2im(image_tensor, imtype=jnp.uint8, cent=1., factor=255. / 2.):
     """ A function to convert tensor to image. """
 
     image_numpy = image_tensor[0].cpu().float().numpy()
-    image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + cent) * factor
+    image_numpy = (jnp.transpose(image_numpy, (1, 2, 0)) + cent) * factor
     return image_numpy.astype(imtype)
 
 
-def im2tensor(image, imtype=np.uint8, cent=1., factor=255. / 2.):
+def im2tensor(image, imtype=jnp.uint8, cent=1., factor=255. / 2.):
     """ A function to convert image tensor to tensor. """
 
     return torch.tensor((image / factor - cent)
-                        [:, :, :, np.newaxis].transpose((3, 2, 0, 1)))
+                        [:, :, :, jnp.newaxis].transpose((3, 2, 0, 1)))
 
 
 def tensor2vec(vector_tensor):
@@ -130,28 +131,28 @@ def voc_ap(rec, prec, use_07_metric=False):
     if use_07_metric:
         # 11 point metric
         ap = 0.
-        for t in np.arange(0., 1.1, 0.1):
-            if np.sum(rec >= t) == 0:
+        for t in jnp.arange(0., 1.1, 0.1):
+            if jnp.sum(rec >= t) == 0:
                 p = 0
             else:
-                p = np.max(prec[rec >= t])
+                p = jnp.max(prec[rec >= t])
             ap = ap + p / 11.
     else:
         # correct AP calculation
         # first append sentinel values at the end
-        mrec = np.concatenate(([0.], rec, [1.]))
-        mpre = np.concatenate(([0.], prec, [0.]))
+        mrec = jnp.concatenate(([0.], rec, [1.]))
+        mpre = jnp.concatenate(([0.], prec, [0.]))
 
         # compute the precision envelope
         for i in range(mpre.size - 1, 0, -1):
-            mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+            mpre[i - 1] = jnp.maximum(mpre[i - 1], mpre[i])
 
         # to calculate area under PR curve, look for points
         # where X axis (recall) changes value
-        i = np.where(mrec[1:] != mrec[:-1])[0]
+        i = jnp.where(mrec[1:] != mrec[:-1])[0]
 
         # and sum (\Delta recall) * prec
-        ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+        ap = jnp.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
 
