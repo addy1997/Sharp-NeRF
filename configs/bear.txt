@@ -1,7 +1,7 @@
-expname = sofa
-basedir = /home/adwait/Deblur-NeRF/logs/logs_sofa
-datadir = /home/adwait/Deblur-NeRF/synthetic_dataset/sofa
-tbdir = /home/adwait/Deblur-NeRF/logs/logs_sofa
+expname = bear
+basedir = /home/adwait/Deblur-NeRF/logs/logs_bear
+datadir = /home/adwait/Deblur-NeRF/synthetic_dataset/bear
+tbdir = /home/adwait/Deblur-NeRF/logs/logs_bear
 dataset_type = syn_llff
 
 no_batching = False
