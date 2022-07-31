@@ -5,7 +5,6 @@ import os
 import imageio
 import time
 
-
 def init_linear_weights(m):
     if isinstance(m, nn.Linear):
         if m.weight.shape[0] in [2, 3]:
@@ -17,7 +16,6 @@ def init_linear_weights(m):
     elif isinstance(m, nn.ConvTranspose2d):
         nn.init.xavier_normal_(m.weight)
         nn.init.constant_(m.bias, 0)
-
 
 class DSKnet(nn.Module):
     def __init__(self, num_img, poses, num_pt, kernel_hwindow, *, random_hwindow=0.25,
@@ -75,11 +73,17 @@ class DSKnet(nn.Module):
             self.in_embed_fn, self.in_embed_cnl = None, 0
 
         self.img_embed_cnl = img_embed
+        
+        if in_embed == 0:
+            self.in_embed_fn, self.in_embed_cnl = no_enc(in_embed)
 
         if spatial_embed > 0:
             self.spatial_embed_fn, self.spatial_embed_cnl = get_embedder(spatial_embed, input_dim=2)
         else:
             self.spatial_embed_fn, self.spatial_embed_cnl = None, 0
+            
+        if spatial_embed == 0:
+            self.spatial_embed_fn, self.spatial_embed_cnl = no_enc(spatial_embed)
 
         if depth_embed > 0:
             self.require_depth = True
@@ -383,7 +387,8 @@ class NeRFAll(nn.Module):
             rgb_map_0, depth_map_0, acc_map_0, density_map0 = rgb_map, depth_map, acc_map, density_map
 
             z_vals_mid = .5 * (z_vals[..., 1:] + z_vals[..., :-1])
-            z_samples = sample_pdf(z_vals_mid, weights[..., 1:-1], N_importance, det=(perturb == 0.), pytest=pytest)
+            #z_samples = sample_pdf(z_vals_mid, weights[..., 1:-1], N_importance, det=(perturb == 0.), pytest=pytest)
+            z_samples = piecewise_constant_pdf(z_vals_mid, weights[..., 1:-1], N_importance, use_stratified_sampling=True, pytest=pytest)
             z_samples = z_samples.detach()
 
             z_vals, _ = torch.sort(torch.cat([z_vals, z_samples], -1), -1)
