@@ -5,4 +5,6 @@ This project builds upon the source code borrowed from the projects ![Deblur-NeR
 
 Please note that this source code only has the executable files and not the datasets used to train the model. The link to the dataset will be provided shortly.
 
-The rendered views can be found in the `Results` folder. There are a few videos of of the real-world scenes rendered by the model. They mainly comprise of views from the `motion blur` category and from the `defocus blur` category, respectively. 
+The rendered views can be found in the `Results` folder. There are a few videos of of the real-world scenes rendered by the model. They mainly comprise of views from the `motion blur` category and from the `defocus blur` category, respectively.
+
+All credit for the research, original viewer code and demo scene data goes to the [original authors](https://arxiv.org/abs/2111.14292).
